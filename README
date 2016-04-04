@@ -1,3 +1,5 @@
 A small collection of 8266 example code
 
-webserver_value_store.ino - the most basic example of a value store accessed through a webserver
+
+webclient_value_store.ino - a simple client which posts a value to a device running webserver_value_store (client code)
+webserver_value_store.ino - the most basic example of a value store server which can be updated over http (server code)
