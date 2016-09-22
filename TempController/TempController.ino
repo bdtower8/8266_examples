@@ -10,12 +10,13 @@ const char* ssid = "";
 const char* password = "";
 
 float fSensorValueTemperature = 0.0f;
-float fAngleX = 0.0f;
-float fAngleY = 0.0f;
-float fAngleZ = 0.0f;
 
 float fSafeMarginC = 0.5f;
 float fTargetTemperature = 18.3f;
+
+long lPreviousUpdate = 0;
+long lTimeBeforeAlarm = 7 * 60 * 1000;
+bool bAlarmState = false;
 
 ESP8266WebServer server(80);
 
@@ -52,7 +53,11 @@ void handleUpdate() {
     bNewData = true;
   }
 
-  String sResponse = "Current Temperature: " + String(fSensorValueTemperature) + "\nTarget Temperature: " + String(fTargetTemperature);
+  String sResponse = "Current Temperature: " + String(fSensorValueTemperature) + "\nTarget Temperature: " + String(fTargetTemperature) + "\nTime Since Update: " + String((millis() - lPreviousUpdate)/1000) + " seconds";
+  
+  if(bAlarmState) {
+    sResponse += "\n*** ALARM - NO DATA ***";
+  } 
 
   // if we have new data
   if(bNewData) {
@@ -67,7 +72,11 @@ void handleUpdate() {
 }
 
 void handleRoot() {
-  String sResponse = "Current Temperature: " + String(fSensorValueTemperature) + "\nTarget Temperature: " + String(fTargetTemperature);
+  String sResponse = "Current Temperature: " + String(fSensorValueTemperature) + "\nTarget Temperature: " + String(fTargetTemperature) + "\nTime Since Update: " + String((millis() - lPreviousUpdate)/1000) + " seconds";
+  if(bAlarmState) {
+    sResponse += "\n*** ALARM - NO DATA ***";
+  }
+  
   Serial.println(sResponse);
   server.send(200, "text/plain", sResponse);
 }
@@ -91,6 +100,10 @@ void handleNotFound() {
 
 void updateTemperatureController() {
   Serial.println("New data, updating controller");
+
+  // track that we updated the controller
+  lPreviousUpdate = millis();
+  bAlarmState = false;
   
   // if it's too cold, turn on heater
   if(fSensorValueTemperature < fTargetTemperature) {
@@ -142,12 +155,23 @@ void setup() {
   server.onNotFound(handleNotFound);
 
   server.begin();
+
+  // reset our timeout watchdog
+  lPreviousUpdate = millis();
   
   Serial.println("Ready to go...");
 }
 
 void loop() {
+  if(!bAlarmState && (millis() - lPreviousUpdate > lTimeBeforeAlarm)) {
+    Serial.println("No data in specified time, turning off fridge/heater");
+    
+    bAlarmState = true;
+
+    // turn off everything
+    enableHeater(false);
+    enableFridge(false);
+  }
   
-  server.handleClient();
-  
+  server.handleClient();  
 }
