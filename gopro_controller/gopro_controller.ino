@@ -16,6 +16,9 @@ const int triggerPin = 21;
 bool bWasTriggered = false;
 
 // WoL support
+// NOTE : The MAC address can be obtained from the camera by connecting a wireless device
+//        to the camera's WiFi access point. Once connected, navigate to http://10.5.5.9/gp/gpControl/info
+//        and you should see the MAC address as ap_mac in the JSON response
 const int localPort = 7;
 const int wolPort = 9;
 byte remote_MAC_ADD[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
